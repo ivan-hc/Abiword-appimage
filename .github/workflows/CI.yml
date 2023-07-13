@@ -20,8 +20,8 @@ jobs:
         sudo apt update
         sudo apt install libfuse2
         wget https://raw.githubusercontent.com/ivan-hc/Abiword-appimage/main/abiword-debian.sh
-        chmod a+x ./abiword-junest.sh
-        ./abiword-junest.sh
+        chmod a+x ./abiword-debian.sh
+        ./abiword-debian.sh
         mkdir dist
         mv *AppImage dist/
 
