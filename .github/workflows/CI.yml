@@ -18,7 +18,7 @@ jobs:
     - name: build
       if: always()
       run: |
-        pacman -Syu && pacman -S desktop-file-utils wget
+        pacman -Syu --noconfirm && pacman -S --noconfirm desktop-file-utils wget
         wget https://raw.githubusercontent.com/ivan-hc/Abiword-appimage/main/abiword-junest.sh
         chmod a+x ./abiword-junest.sh
         ./abiword-junest.sh
