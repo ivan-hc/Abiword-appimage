@@ -18,7 +18,7 @@ jobs:
       if: always()
       run: |
         sudo apt update
-        sudo apt install libfuse2 desktop-file-utils
+        sudo apt install desktop-file-utils
         chmod a+x ./abiword-junest.sh
         ./abiword-junest.sh
         mkdir dist
