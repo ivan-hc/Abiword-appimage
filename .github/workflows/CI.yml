@@ -19,11 +19,10 @@ jobs:
       run: |
         sudo apt update
         sudo apt install libfuse2 desktop-file-utils
-        wget https://raw.githubusercontent.com/ivan-hc/Abiword-appimage/main/abiword-junest.sh
         chmod a+x ./abiword-junest.sh
         ./abiword-junest.sh
         mkdir dist
-        mv *AppImage dist/
+        mv *AppImage* dist/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4.4.0
@@ -49,5 +48,5 @@ jobs:
             prerelease: false
             draft: false
             files: |
-              *.AppImage
+              *.AppImage*
             repo_token: ${{ secrets.GITHUB_TOKEN }}
