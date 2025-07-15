@@ -1,2 +1,1 @@
-https://github.com/ivan-hc/Abiword-appimage/releases/download/continuous/AbiWord_3.0.6-3-archimage4.3-x86_64.AppImage
-Mon Jul 14 01:42:38 UTC 2025
+Tue Jul 15 01:43:04 UTC 2025
