@@ -17,7 +17,7 @@ LIBSAVED="SAVELIBSPLEASE $lib_browser_launcher"
 # Some keywords and paths are already set. Remove them if you consider them necessary for the AppImage to function properly.
 ETC_REMOVED="makepkg.conf pacman"
 BIN_REMOVED="gcc"
-LIB_REMOVED="gcc"
+LIB_REMOVED="gcc libgallium"
 PYTHON_REMOVED="__pycache__/"
 SHARE_REMOVED="gcc icons/AdwaitaLegacy icons/Adwaita/cursors/ terminfo"
 
@@ -145,6 +145,13 @@ fi
 cd ..
 
 printf -- "\n-----------------------------------------------------------------------------\n CREATING THE APPDIR\n-----------------------------------------------------------------------------\n\n"
+
+if [ ! -f ./deps ]; then
+	rm -Rf AppDir/*
+elif [ -f ./deps ]; then
+	DEPENDENCES0=$(cat ./deps)
+	[ "$DEPENDENCES0" != "$DEPENDENCES" ] && rm -Rf AppDir/*
+fi
 
 # Set locale
 rm -f archlinux/.junest/etc/locale.conf
@@ -305,6 +312,55 @@ rsync -av archlinux/AppDir/bin/* AppDir/.junest/usr/bin/ | printf "\n◆ Saving 
 rsync -av archlinux/AppDir/lib/* AppDir/.junest/usr/lib/ | printf "\n◆ Saving /usr/lib"
 rsync -av archlinux/AppDir/share/* AppDir/.junest/usr/share/ | printf "\n◆ Saving /usr/share\n"
 
+# Extract the main package in the AppDir
+_extract_base_to_AppDir() {
+	rsync -av base/etc/* AppDir/.junest/etc/ 2>/dev/null
+	rsync -av base/usr/bin/* AppDir/.junest/usr/bin/ 2>/dev/null
+	rsync -av base/usr/lib/* AppDir/.junest/usr/lib/ 2>/dev/null
+	rsync -av base/usr/share/* AppDir/.junest/usr/share/ 2>/dev/null
+	if [ -d archlinux/.junest/usr/lib32 ]; then
+		mkdir -p AppDir/.junest/usr/lib32
+		rsync -av archlinux/.junest/usr/lib32/* AppDir/.junest/usr/lib32/ 2>/dev/null
+	fi
+}
+
+_extract_main_package() {
+	mkdir -p base
+	rm -Rf ./base/*
+	pkg_full_path=$(find ./archlinux/.junest -type f -name "$APP-*zst")
+	if [ "$(echo "$pkg_full_path" | wc -l)" = 1 ]; then
+		pkg_full_path=$(find ./archlinux/.junest -type f -name "$APP-*zst")
+	else
+		for p in $pkg_full_path; do
+			if tar fx "$p" .PKGINFO -O | grep -q "pkgname = $APP$"; then
+				pkg_full_path="$p"
+			fi
+		done
+	fi
+	[ -z "$pkg_full_path" ] && echo "💀 ERROR: no package found for \"$APP\", operation aborted!" && exit 0
+	tar fx "$pkg_full_path" -C ./base/
+	_extract_base_to_AppDir | printf "\n◆ Extract the base package to AppDir\n"
+}
+
+_extract_core_dependencies() {
+	if [ -n "$DEPENDENCES" ]; then
+		for d in $DEPENDENCES; do
+			if test -f ./archlinux/"$d"-*; then
+				tar fx ./archlinux/"$d"-* -C ./base/ | printf "\n◆ Force \"$d\""
+			else
+				pkg_full_path=$(find ./archlinux -type f -name "$d-[0-9]*zst")
+				tar fx "$pkg_full_path" -C ./base/ | printf "\n◆ Force \"$d\""
+			fi
+		done
+		_extract_base_to_AppDir | printf "\n\n◆ Extract core dependencies to AppDir\n"
+	fi
+}
+
+_extract_main_package
+_extract_core_dependencies
+
+tar fx "$(find ./archlinux -type f -name "hicolor-icon-theme-[0-9]*zst")" -C ./base/ 2>/dev/null
+
 printf -- "\n-----------------------------------------------------------------------------\n IMPLEMENTING USER'S SELECTED FILES AND DIRECTORIES\n-----------------------------------------------------------------------------\n\n"
 
 # Save files in /usr/bin
@@ -438,9 +494,10 @@ if test -f ./*.AppImage; then rm -Rf ./*archimage*.AppImage; fi
 
 APPNAME=$(cat AppDir/*.desktop | grep '^Name=' | head -1 | cut -c 6- | sed 's/ /-/g')
 REPO="$APPNAME-appimage"
-TAG="continuous"
-VERSION="$VERSION"
+TAG="latest"
 UPINFO="gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|$REPO|$TAG|*x86_64.AppImage.zsync"
+
+echo "$VERSION" > ./version
 
 _appimagetool() {
 	if ! command -v appimagetool 1>/dev/null; then
